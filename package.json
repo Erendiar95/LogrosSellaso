@@ -1,0 +1,25 @@
+{
+  "name": "logros",
+  "version": "1.0.0",
+  "description": "Logros - Red social para compartir y celebrar logros personales con amigos",
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "seed": "npm --prefix server run seed",
+    "build": "npm --prefix server run build && npm --prefix client run build"
+  },
+  "keywords": [
+    "logros",
+    "achievements",
+    "social",
+    "react",
+    "express",
+    "prisma",
+    "sqlite"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer-core": "^25.18.1"
+  }
+}

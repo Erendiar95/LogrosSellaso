@@ -1,0 +1,116 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  avatarColor  String   @default("#f59e0b")
+  bio          String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  achievements           Achievement[]
+  sentFriendRequests     Friendship[]   @relation("SentFriendships")
+  receivedFriendRequests Friendship[]   @relation("ReceivedFriendships")
+  reactions              Reaction[]
+  comments               Comment[]
+  notifications          Notification[] @relation("UserNotifications")
+  actedNotifications     Notification[] @relation("ActorNotifications")
+}
+
+model Friendship {
+  id          String   @id @default(uuid())
+  requesterId String
+  addresseeId String
+  status      String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  requester   User     @relation("SentFriendships", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee   User     @relation("ReceivedFriendships", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([requesterId])
+  @@index([addresseeId])
+  @@index([status])
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  userId      String
+  title       String
+  description String
+  category    String   // HEALTH, STUDIES, WORK, PERSONAL, CREATIVITY, OTHER
+  date        DateTime @default(now())
+  imageUrl    String?
+  visibility  String   @default("FRIENDS") // FRIENDS, PRIVATE
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reactions     Reaction[]
+  comments      Comment[]
+  notifications Notification[]
+
+  @@index([userId])
+  @@index([category])
+  @@index([visibility])
+  @@index([createdAt])
+}
+
+model Reaction {
+  id            String   @id @default(uuid())
+  achievementId String
+  userId        String
+  type          String   // CELEBRATE, CLAP, STRONG, HEART
+  createdAt     DateTime @default(now())
+
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([achievementId, userId, type])
+  @@index([achievementId])
+  @@index([userId])
+}
+
+model Comment {
+  id            String   @id @default(uuid())
+  achievementId String
+  userId        String
+  content       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([achievementId])
+  @@index([userId])
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String   // Receptor
+  actorId       String   // Quien provocó el evento
+  achievementId String?
+  type          String   // REACTION, COMMENT, FRIEND_REQUEST, FRIEND_ACCEPTED
+  message       String
+  read          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user          User         @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor         User         @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: Cascade)
+  achievement   Achievement? @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}

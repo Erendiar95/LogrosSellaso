@@ -15,7 +15,7 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 // Middlewares
-app.use(cors({ origin: process.env.FRONTEND_URL }));
+app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:5173" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -43,7 +43,7 @@ app.use((_req, res) => {
 // Manejador global de errores
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Error no controlado:', err);
-  const status = err.status || 500;
+  const status = typeof err.status === 'number' ? err.status : 500;
   res.status(status).json({
     error: err.message || 'Error interno del servidor',
   });

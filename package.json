@@ -21,5 +21,8 @@
   "license": "MIT",
   "dependencies": {
     "puppeteer-core": "^25.18.1"
+  },
+  "devDependencies": {
+    "@prisma/prisma7": "^7.10.1"
   }
 }

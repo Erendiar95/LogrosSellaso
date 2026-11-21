@@ -8,7 +8,8 @@ Una aplicación web full-stack moderna, limpia y motivadora para que grupos de a
 
 - **Frontend:** React 18, Vite, TypeScript, Tailwind CSS, Lucide Icons, Canvas-Confetti.
 - **Backend:** Node.js, Express, TypeScript, Zod, JWT, bcryptjs, Multer.
-- **Base de Datos:** SQLite con Prisma ORM (ideal para ejecución local sin configuración adicional).
+- **Almacenamiento de Fotos:** **Cloudinary** (alojamiento y optimización de imágenes en la nube vía SDK oficial).
+- **Base de Datos:** PostgreSQL en Neon (o SQLite local) gestionado con Prisma ORM.
 - **Diseño:** Mobile-first, responsive, paleta cálida (ámbar / dorado), microinteracciones y modo oscuro.
 
 ---
@@ -23,8 +24,8 @@ Una aplicación web full-stack moderna, limpia y motivadora para que grupos de a
    - Enviar y recibir solicitudes de amistad.
    - Aceptar o rechazar solicitudes con actualización de contadores.
    - Lista de amigos y opción de eliminar amistad.
-3. **Publicar un Logro:**
-   - Título, descripción, fecha, categoría y foto opcional (subida desde archivo local o URL).
+3. **Publicar un Logro con Fotos en Cloudinary:**
+   - Título, descripción, fecha, categoría y foto subida a Cloudinary en tiempo real con optimización automática.
    - Selector de privacidad: visible para **"Mis Amigos"** o **"Solo yo"** (privado).
    - ¡Animación de confeti al publicar con éxito!
 4. **Feed de Logros Dinámico:**
@@ -50,40 +51,43 @@ Una aplicación web full-stack moderna, limpia y motivadora para que grupos de a
 
 ---
 
+## ☁️ Configuración de Cloudinary
+
+En `server/.env` agrega tus credenciales de Cloudinary (disponibles en el Dashboard de [Cloudinary](https://cloudinary.com)):
+
+```env
+# Opción 1: Variables individuales
+CLOUDINARY_CLOUD_NAME=tu_cloud_name
+CLOUDINARY_API_KEY=tu_api_key
+CLOUDINARY_API_SECRET=tu_api_secret
+
+# Opción 2: URL completa
+# CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
+```
+
+---
+
 ## 🛠️ Instalación y Ejecución en Local
 
-### 1. Clonar o acceder a la carpeta del proyecto
+### 1. Ubicación del proyecto
 ```bash
-cd "C:\Users\PacoMS95\.gemini\antigravity\scratch\logros"
+cd "C:\Users\PacoMS95\Documents\GitHub\LogrosSellaso"
 ```
 
 ### 2. Configurar variables de entorno
-Tanto el cliente como el servidor cuentan con archivos `.env.example`:
-- En `server/`: ya está generado `.env` con:
+Revisa los archivos `.env.example` en `server/`:
+- `server/.env`:
   ```env
   PORT=4000
-  DATABASE_URL="file:./dev.db"
-  JWT_SECRET="logros_super_secret_jwt_key_2026_celebrate"
+  DATABASE_URL="tu_url_de_base_de_datos"
+  JWT_SECRET="tu_jwt_secret"
   CLIENT_URL="http://localhost:5173"
+  CLOUDINARY_CLOUD_NAME="tu_cloud_name"
+  CLOUDINARY_API_KEY="tu_api_key"
+  CLOUDINARY_API_SECRET="tu_api_secret"
   ```
 
-### 3. Instalar dependencias y poblar la Base de Datos (Seed)
-```bash
-# Servidor
-cd server
-npm install
-npx prisma db push
-npm run seed
-cd ..
-
-# Cliente
-cd client
-npm install
-cd ..
-```
-
-### 4. Iniciar la aplicación
-Abre dos terminales (o ejecuta simultáneamente):
+### 3. Iniciar la aplicación
 
 **Terminal 1 (Backend - Puerto 4000):**
 ```bash
@@ -98,45 +102,3 @@ npm run dev
 ```
 
 Abre tu navegador en `http://localhost:5173`.
-
----
-
-## 👥 Cuentas de Prueba Incluidas en el Seed
-
-Todas las contraseñas son: `password123`
-
-| Nombre | Email | Descripción |
-|---|---|---|
-| **Juan Pérez** | `juan@ejemplo.com` | Maratonista y desarrollador tech. Amigo de Sofía y Carlos. Tiene 1 logro privado. |
-| **Sofía Martínez** | `sofia@ejemplo.com` | Arquitecta de soluciones y pintora al óleo. Amiga de Juan y Lucía. |
-| **Carlos Gómez** | `carlos@ejemplo.com` | Entusiasta del fitness y guitarrista. Amigo de Juan y Diego. |
-| **Lucía Morales** | `lucia@ejemplo.com` | Investigadora científica con mención de honor y senderista. |
-| **Diego Ramírez** | `diego@ejemplo.com` | Diseñador de producto y horticultor urbano. |
-
----
-
-## 📂 Estructura del Código
-
-```
-logros/
-├── package.json
-├── README.md
-├── server/
-│   ├── prisma/
-│   │   ├── schema.prisma      # Esquema SQLite (User, Friendship, Achievement, Reaction, Comment, Notification)
-│   │   └── seed.ts            # 5 usuarios realistas, 15 logros, reacciones y comentarios
-│   ├── uploads/               # Fotos de logros subidas
-│   └── src/
-│       ├── controllers/       # Controladores de auth, feed, logros, amigos, reacciones, comentarios, perfil
-│       ├── middleware/        # Autenticación JWT y Multer
-│       ├── routes/            # Endpoints /api/*
-│       └── server.ts          # Configuración de Express
-└── client/
-    ├── src/
-    │   ├── components/        # Navbar, AchievementCard, NewAchievementModal, UserAvatar, CategoryBadge, EmptyState
-    │   ├── context/           # AuthContext, NotificationContext, ThemeContext
-    │   ├── pages/             # FeedPage, FriendsPage, ProfilePage, LoginPage, RegisterPage
-    │   ├── services/          # api.ts (cliente tipado para backend)
-    │   ├── types/             # Tipos TypeScript
-    │   └── utils/             # Confetti y utilidades
-```

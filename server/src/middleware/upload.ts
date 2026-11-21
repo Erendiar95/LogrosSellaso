@@ -1,22 +1,8 @@
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 
-const uploadsDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `achievement-${uniqueSuffix}${ext}`);
-  },
-});
+// Almacenamiento en memoria para subir directamente los buffers a Cloudinary sin guardar archivos temporales en disco
+const storage = multer.memoryStorage();
 
 export const upload = multer({
   storage,

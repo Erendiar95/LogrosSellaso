@@ -2,6 +2,11 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { AuthRequest } from '../middleware/auth.js';
+import {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+  isCloudinaryConfigured,
+} from '../config/cloudinary.js';
 
 const VALID_CATEGORIES = ['HEALTH', 'STUDIES', 'WORK', 'PERSONAL', 'CREATIVITY', 'OTHER'] as const;
 
@@ -13,7 +18,7 @@ const achievementSchema = z.object({
   }),
   date: z.string().optional(),
   visibility: z.enum(['FRIENDS', 'PRIVATE']).default('FRIENDS'),
-  imageUrl: z.string().optional(),
+  imageUrl: z.string().optional().nullable(),
 });
 
 export const getFeed = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -98,15 +103,38 @@ export const getFeed = async (req: AuthRequest, res: Response): Promise<void> =>
 export const createAchievement = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
+    let uploadedImageUrl: string | null = null;
 
-    // Procesar datos: pueden venir de multipart/form-data (req.body) o json
+    // Si se subió un archivo, procesarlo a través de Cloudinary
+    if (req.file) {
+      if (!isCloudinaryConfigured()) {
+        res.status(400).json({
+          error:
+            'El almacenamiento en Cloudinary no está configurado. Por favor, define CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET en el archivo .env',
+        });
+        return;
+      }
+
+      try {
+        const uploadResult = await uploadToCloudinary(req.file.buffer, 'logros/achievements');
+        uploadedImageUrl = uploadResult.secure_url;
+      } catch (uploadError: any) {
+        console.error('Error al subir imagen a Cloudinary:', uploadError);
+        res.status(500).json({
+          error: `Error al subir la imagen a Cloudinary: ${uploadError.message || 'Fallo de subida'}`,
+        });
+        return;
+      }
+    }
+
+    // Procesar datos del logro
     const bodyData = {
       title: req.body.title,
       description: req.body.description,
       category: req.body.category,
       date: req.body.date,
       visibility: req.body.visibility,
-      imageUrl: req.file ? `/uploads/${req.file.filename}` : req.body.imageUrl,
+      imageUrl: uploadedImageUrl || req.body.imageUrl || null,
     };
 
     const parseResult = achievementSchema.safeParse(bodyData);
@@ -223,6 +251,11 @@ export const deleteAchievement = async (req: AuthRequest, res: Response): Promis
     if (achievement.userId !== userId) {
       res.status(403).json({ error: 'Solo el creador puede eliminar este logro' });
       return;
+    }
+
+    // Si tiene imagen almacenada en Cloudinary, eliminarla también de Cloudinary
+    if (achievement.imageUrl) {
+      await deleteFromCloudinary(achievement.imageUrl);
     }
 
     await prisma.achievement.delete({ where: { id } });
